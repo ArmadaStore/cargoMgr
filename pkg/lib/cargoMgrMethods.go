@@ -4,7 +4,10 @@ package lib
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"os"
+	"sync"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -60,10 +63,13 @@ func (cc *CargoComm) RegisterToMgr(ctx context.Context, cargoInfo *cargoToMgr.Ca
 
 	cc.cargoMgrInfo.Cargos[cargoID] = newCargoNode
 
+	fmt.Fprintf(os.Stderr, "%v\n", cc.cargoMgrInfo.Cargos)
+
 	return &cargoToMgr.Ack{ID: cargoID, Ack: "Registered cargo node"}, nil
 }
 
-func (cargoMgrInfo *CargoMgrInfo) ListenRoutine() {
+func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
+	defer wg.Done()
 	listen, err := net.Listen("tcp", "localhost:"+cargoMgrInfo.Port)
 	cmd.CheckError(err)
 

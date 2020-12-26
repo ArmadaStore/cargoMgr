@@ -2,10 +2,16 @@
 package cargoMgr
 
 import (
-	"github.com/ArmadaStore/cargo/pkg/lib"
+	"sync"
+
+	"github.com/ArmadaStore/cargoMgr/pkg/lib"
 )
 
 func Run(port string) error {
 	cargoMgrInfo := lib.Init(port)
-	cargoMgrInfo.ListenRoutine()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	cargoMgrInfo.ListenRoutine(&wg)
+	wg.Wait()
 }
