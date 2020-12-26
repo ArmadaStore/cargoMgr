@@ -14,4 +14,6 @@ func Run(port string) error {
 	wg.Add(1)
 	cargoMgrInfo.ListenRoutine(&wg)
 	wg.Wait()
+
+	return nil
 }

@@ -10,7 +10,7 @@ import (
 
 func main() {
 	// cargo manager listen port
-	port := os.Args[0]
+	port := os.Args[1]
 
 	err := cargoMgr.Run(port)
 	cmd.CheckError(err)

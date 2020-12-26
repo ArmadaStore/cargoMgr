@@ -44,6 +44,8 @@ func Init(port string) *CargoMgrInfo {
 	cargoMgrInfo.Port = port
 	cargoMgrInfo.CC.cargoMgrInfo = &cargoMgrInfo
 
+	//fmt.Fprintf(os.Stderr, "Port number %s", cargoMgrInfo.Port)
+
 	return &cargoMgrInfo
 }
 
@@ -70,7 +72,8 @@ func (cc *CargoComm) RegisterToMgr(ctx context.Context, cargoInfo *cargoToMgr.Ca
 
 func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
 	defer wg.Done()
-	listen, err := net.Listen("tcp", "localhost:"+cargoMgrInfo.Port)
+
+	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", cargoMgrInfo.Port))
 	cmd.CheckError(err)
 
 	server := grpc.NewServer()
