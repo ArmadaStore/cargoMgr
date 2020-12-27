@@ -43,6 +43,7 @@ func Init(port string) *CargoMgrInfo {
 	var cargoMgrInfo CargoMgrInfo
 	cargoMgrInfo.Port = port
 	cargoMgrInfo.CC.cargoMgrInfo = &cargoMgrInfo
+	cargoMgrInfo.Cargos = make(map[string]CargoNode)
 
 	//fmt.Fprintf(os.Stderr, "Port number %s", cargoMgrInfo.Port)
 
