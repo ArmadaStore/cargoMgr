@@ -12,7 +12,8 @@ func Run(port string) error {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
-	cargoMgrInfo.ListenRoutine(&wg)
+	cargoMgrInfo.ListenCargoToMgr(&wg)
+	cargoMgrInfo.ListenTaskToMgr(&wg)
 	wg.Wait()
 
 	return nil
