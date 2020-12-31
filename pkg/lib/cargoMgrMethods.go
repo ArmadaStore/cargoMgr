@@ -151,7 +151,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 	return &taskToCargoMgr.Cargos{IPPort: returnCargos}, nil
 }
 
-func (cargoMgrInfo *CargoMgrInfo) ListenCargoToMgr(wg *sync.WaitGroup) {
+func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", cargoMgrInfo.Port))
