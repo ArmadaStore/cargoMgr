@@ -34,6 +34,13 @@ type CargoComm struct {
 	cargoMgrInfo *CargoMgrInfo
 }
 
+type ApplicationInfo struct {
+	AppID    string
+	cargoIDs []string
+	IPs      []string
+	Ports    []string
+}
+
 type CargoNode struct {
 	IP    string
 	Port  string
@@ -45,10 +52,11 @@ type CargoNode struct {
 }
 
 type CargoMgrInfo struct {
-	Port   string
-	CC     CargoComm
-	TCM    TaskComm
-	Cargos map[string]CargoNode
+	Port    string
+	CC      CargoComm
+	TCM     TaskComm
+	Cargos  map[string]CargoNode
+	AppInfo map[string]ApplicationInfo
 }
 
 func Init(port string) *CargoMgrInfo {
@@ -57,6 +65,7 @@ func Init(port string) *CargoMgrInfo {
 	cargoMgrInfo.CC.cargoMgrInfo = &cargoMgrInfo
 	cargoMgrInfo.TCM.cargoMgrInfo = &cargoMgrInfo
 	cargoMgrInfo.Cargos = make(map[string]CargoNode)
+	cargoMgrInfo.AppInfo = make(map[string]ApplicationInfo)
 
 	//fmt.Fprintf(os.Stderr, "Port number %s", cargoMgrInfo.Port)
 
@@ -83,6 +92,19 @@ func (cc *CargoComm) RegisterToMgr(ctx context.Context, cargoInfo *cargoToMgr.Ca
 	fmt.Fprintf(os.Stderr, "%v\n", cc.cargoMgrInfo.Cargos)
 
 	return &cargoToMgr.Ack{ID: cargoID, Ack: "Registered cargo node"}, nil
+}
+
+func (cc *CargoComm) GetReplicaInfo(ctx context.Context, appInfo *cargoToMgr.AppInfo) (*cargoToMgr.ReplicaInfo, error) {
+	appID := appInfo.GetAppID()
+	recordedAppInfo := cc.cargoMgrInfo.AppInfo[appID]
+	replicaInfo := cargoToMgr.ReplicaInfo{
+		CargoID: recordedAppInfo.cargoIDs,
+		IP:      recordedAppInfo.IPs,
+		Port:    recordedAppInfo.Ports,
+	}
+
+	return &replicaInfo, nil
+
 }
 
 func proximityComparison(ghSrc, ghDst []rune) int {
@@ -136,19 +158,33 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 
 	requestedCargos := tcm.cargoMgrInfo.reportNeighborsInOrder(requesterGeoHash, nReplicas)
 
-	returnCargos := ""
-
+	ips := make([]string, 0)
+	ports := make([]string, 0)
+	cargoids := make([]string, 0)
 	for i := 0; i < len(requestedCargos); i++ {
 		hash := requestedCargos[i]
-		if i == 0 {
-			returnCargos = tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
-		} else {
-			returnCargos = returnCargos + "#" + tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
-		}
+		ips = append(ips, tcm.cargoMgrInfo.Cargos[hash].IP)
+		ports = append(ports, tcm.cargoMgrInfo.Cargos[hash].Port)
+		cargoids = append(cargoids, tcm.cargoMgrInfo.Cargos[hash].ID)
+		// if i == 0 {
+		// 	returnCargos = tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
+		// } else {
+		// 	returnCargos = returnCargos + "#" + tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
+		// }
 
 	}
 
-	return &taskToCargoMgr.Cargos{IPPort: returnCargos}, nil
+	appID := requesterInfo.GetAppID()
+	appInfo := ApplicationInfo{
+		AppID:    appID,
+		cargoIDs: cargoids,
+		IPs:      ips,
+		Ports:    ports,
+	}
+	tcm.cargoMgrInfo.AppInfo[appID] = appInfo
+
+	// return &taskToCargoMgr.Cargos{IPPort: returnCargos}, nil
+	return &taskToCargoMgr.Cargos{IPs: ips, Ports: ports}, nil
 }
 
 func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
