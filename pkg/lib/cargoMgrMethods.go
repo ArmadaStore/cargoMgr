@@ -35,10 +35,12 @@ type CargoComm struct {
 }
 
 type ApplicationInfo struct {
-	AppID    string
-	cargoIDs []string
-	IPs      []string
-	Ports    []string
+	AppID     string
+	cargoIDs  []string
+	IPs       []string
+	Ports     []string
+	Cond      *sync.Cond
+	WriteLock bool
 }
 
 type CargoNode struct {
@@ -56,7 +58,7 @@ type CargoMgrInfo struct {
 	CC      CargoComm
 	TCM     TaskComm
 	Cargos  map[string]CargoNode
-	AppInfo map[string]ApplicationInfo
+	AppInfo map[string]*ApplicationInfo
 }
 
 func Init(port string) *CargoMgrInfo {
@@ -65,7 +67,7 @@ func Init(port string) *CargoMgrInfo {
 	cargoMgrInfo.CC.cargoMgrInfo = &cargoMgrInfo
 	cargoMgrInfo.TCM.cargoMgrInfo = &cargoMgrInfo
 	cargoMgrInfo.Cargos = make(map[string]CargoNode)
-	cargoMgrInfo.AppInfo = make(map[string]ApplicationInfo)
+	cargoMgrInfo.AppInfo = make(map[string]*ApplicationInfo)
 
 	//fmt.Fprintf(os.Stderr, "Port number %s", cargoMgrInfo.Port)
 
@@ -105,6 +107,31 @@ func (cc *CargoComm) GetReplicaInfo(ctx context.Context, appInfo *cargoToMgr.App
 
 	return &replicaInfo, nil
 
+}
+func (cc *CargoComm) AcquireWriteLock(ctx context.Context, appInfo *cargoToMgr.AppInfo) (*cargoToMgr.LockAck, error) {
+	appID := appInfo.GetAppID()
+	appInfoToUpdate := cc.cargoMgrInfo.AppInfo[appID]
+	appInfoToUpdate.Cond.L.Lock()
+	for appInfoToUpdate.WriteLock {
+		appInfoToUpdate.Cond.Wait()
+	}
+
+	appInfoToUpdate.WriteLock = true
+	appInfoToUpdate.Cond.L.Unlock()
+	appInfoToUpdate.Cond.Signal()
+
+	return &cargoToMgr.LockAck{Locked: true}, nil
+}
+
+func (cc *CargoComm) ReleaseWriteLock(ctx context.Context, appInfo *cargoToMgr.AppInfo) (*cargoToMgr.ReleaseAck, error) {
+	appID := appInfo.GetAppID()
+	appInfoToUpdate := cc.cargoMgrInfo.AppInfo[appID]
+	appInfoToUpdate.Cond.L.Lock()
+	appInfoToUpdate.WriteLock = false
+	appInfoToUpdate.Cond.L.Unlock()
+	appInfoToUpdate.Cond.Signal()
+
+	return &cargoToMgr.ReleaseAck{Released: true}, nil
 }
 
 func proximityComparison(ghSrc, ghDst []rune) int {
@@ -175,13 +202,12 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 	}
 
 	appID := requesterInfo.GetAppID()
-	appInfo := ApplicationInfo{
-		AppID:    appID,
-		cargoIDs: cargoids,
-		IPs:      ips,
-		Ports:    ports,
-	}
-	tcm.cargoMgrInfo.AppInfo[appID] = appInfo
+
+	tcm.cargoMgrInfo.AppInfo[appID].AppID = appID
+	tcm.cargoMgrInfo.AppInfo[appID].cargoIDs = cargoids
+	tcm.cargoMgrInfo.AppInfo[appID].IPs = ips
+	tcm.cargoMgrInfo.AppInfo[appID].Ports = ports
+	tcm.cargoMgrInfo.AppInfo[appID].WriteLock = false
 
 	// return &taskToCargoMgr.Cargos{IPPort: returnCargos}, nil
 	return &taskToCargoMgr.Cargos{IPs: ips, Ports: ports}, nil
