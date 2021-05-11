@@ -198,7 +198,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 		} else {
 			returnCargos = returnCargos + "#" + tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
 		}
-
+		fmt.Println(returnCargos)
 	}
 
 	appID := requesterInfo.GetAppID()
