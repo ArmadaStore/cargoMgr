@@ -193,6 +193,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 		ips = append(ips, tcm.cargoMgrInfo.Cargos[hash].IP)
 		ports = append(ports, tcm.cargoMgrInfo.Cargos[hash].Port)
 		cargoids = append(cargoids, tcm.cargoMgrInfo.Cargos[hash].ID)
+		returnCargos := ""
 		if i == 0 {
 			returnCargos = tcm.cargoMgrInfo.Cargos[hash].IP + ":" + tcm.cargoMgrInfo.Cargos[hash].Port
 		} else {
