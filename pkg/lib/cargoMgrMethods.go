@@ -206,11 +206,15 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 
 	appID := requesterInfo.GetAppID()
 
-	tcm.cargoMgrInfo.AppInfo[appID].AppID = appID
-	tcm.cargoMgrInfo.AppInfo[appID].cargoIDs = cargoids
-	tcm.cargoMgrInfo.AppInfo[appID].IPs = ips
-	tcm.cargoMgrInfo.AppInfo[appID].Ports = ports
-	tcm.cargoMgrInfo.AppInfo[appID].WriteLock = false
+	appInfo := &ApplicationInfo{
+		AppID:     appID,
+		cargoIDs:  cargoids,
+		IPs:       ips,
+		Ports:     ports,
+		WriteLock: false,
+	}
+
+	tcm.cargoMgrInfo.AppInfo[appID] = appInfo
 
 	// return &taskToCargoMgr.Cargos{IPPort: returnCargos}, nil
 	return &taskToCargoMgr.Cargos{IPs: ips, Ports: ports}, nil
