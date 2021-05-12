@@ -222,7 +222,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	listen, err := net.Listen("tcp", fmt.Sprintf("128.101.118.101:%s", cargoMgrInfo.Port))
+	listen, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%s", cargoMgrInfo.Port))
 	cmd.CheckError(err)
 
 	server := grpc.NewServer()
