@@ -159,7 +159,6 @@ func (cargoMgrInfo *CargoMgrInfo) reportNeighborsInOrder(gh string, k int64) []s
 	SN := make([]sortedNeighbors, nCargos)
 	idx := 0
 	for key := range cargoMgrInfo.Cargos {
-		fmt.Println("Cargo ", idx, ": ", key)
 		result := strings.SplitN(key, "-", 2)
 		SN[idx].hash = key
 		SN[idx].dist = proximityComparison([]rune(gh), []rune(result[0]))
