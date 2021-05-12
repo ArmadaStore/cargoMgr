@@ -39,6 +39,7 @@ type ApplicationInfo struct {
 	cargoIDs  []string
 	IPs       []string
 	Ports     []string
+	Mutex     *sync.Mutex
 	Cond      *sync.Cond
 	WriteLock bool
 }
@@ -111,6 +112,7 @@ func (cc *CargoComm) GetReplicaInfo(ctx context.Context, appInfo *cargoToMgr.App
 func (cc *CargoComm) AcquireWriteLock(ctx context.Context, appInfo *cargoToMgr.AppInfo) (*cargoToMgr.LockAck, error) {
 	appID := appInfo.GetAppID()
 	appInfoToUpdate := cc.cargoMgrInfo.AppInfo[appID]
+	fmt.Println("appInfo: ", appInfoToUpdate)
 	appInfoToUpdate.Cond.L.Lock()
 	for appInfoToUpdate.WriteLock {
 		appInfoToUpdate.Cond.Wait()
@@ -210,9 +212,11 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 		cargoIDs:  cargoids,
 		IPs:       ips,
 		Ports:     ports,
-		Cond:      new(sync.Cond),
+		Mutex:     new(sync.Mutex),
 		WriteLock: false,
 	}
+
+	appInfo.Cond = sync.NewCond(appInfo.Mutex)
 
 	tcm.cargoMgrInfo.AppInfo[appID] = appInfo
 
