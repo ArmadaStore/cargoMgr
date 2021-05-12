@@ -210,6 +210,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 		cargoIDs:  cargoids,
 		IPs:       ips,
 		Ports:     ports,
+		Cond:      new(sync.Cond),
 		WriteLock: false,
 	}
 
