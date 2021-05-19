@@ -22,14 +22,6 @@ import (
 	"github.com/ArmadaStore/comms/rpc/taskToCargoMgr"
 )
 
-type ConsistencyType string
-
-const (
-	Strong   ConsistencyType = "STRONG"
-	One                      = "ONE"
-	Eventual                 = "EVENTUAL"
-)
-
 type TaskComm struct {
 	taskToCargoMgr.UnimplementedRpcTaskToCargoMgrServer
 
@@ -47,7 +39,7 @@ type ApplicationInfo struct {
 	cargoIDs  []string
 	IPs       []string
 	Ports     []string
-	CType     ConsistencyType
+	CType     string
 	Mutex     *sync.Mutex
 	Cond      *sync.Cond
 	WriteLock bool
