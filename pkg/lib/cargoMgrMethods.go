@@ -22,6 +22,14 @@ import (
 	"github.com/ArmadaStore/comms/rpc/taskToCargoMgr"
 )
 
+type ConsistencyType string
+
+const (
+	Strong   ConsistencyType = "STRONG"
+	One                      = "ONE"
+	Eventual                 = "EVENTUAL"
+)
+
 type TaskComm struct {
 	taskToCargoMgr.UnimplementedRpcTaskToCargoMgrServer
 
@@ -39,6 +47,7 @@ type ApplicationInfo struct {
 	cargoIDs  []string
 	IPs       []string
 	Ports     []string
+	CType     ConsistencyType
 	Mutex     *sync.Mutex
 	Cond      *sync.Cond
 	WriteLock bool
@@ -104,10 +113,10 @@ func (cc *CargoComm) GetReplicaInfo(ctx context.Context, appInfo *cargoToMgr.App
 		CargoID: recordedAppInfo.cargoIDs,
 		IP:      recordedAppInfo.IPs,
 		Port:    recordedAppInfo.Ports,
+		CType:   recordedAppInfo.CType,
 	}
 
 	return &replicaInfo, nil
-
 }
 func (cc *CargoComm) AcquireWriteLock(ctx context.Context, appInfo *cargoToMgr.AppInfo) (*cargoToMgr.LockAck, error) {
 	appID := appInfo.GetAppID()
@@ -179,6 +188,7 @@ func (cargoMgrInfo *CargoMgrInfo) reportNeighborsInOrder(gh string, k int64) []s
 }
 
 func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCargoMgr.RequesterInfo) (*taskToCargoMgr.Cargos, error) {
+	cType := requesterInfo.GetCType()
 	lat := requesterInfo.GetLat()
 	lon := requesterInfo.GetLon()
 	requesterGeoHash := geohash.Encode(lat, lon)
@@ -212,6 +222,7 @@ func (tcm *TaskComm) RequestCargo(ctx context.Context, requesterInfo *taskToCarg
 		cargoIDs:  cargoids,
 		IPs:       ips,
 		Ports:     ports,
+		CType:     cType,
 		Mutex:     new(sync.Mutex),
 		WriteLock: false,
 	}
@@ -239,19 +250,3 @@ func (cargoMgrInfo *CargoMgrInfo) ListenRoutine(wg *sync.WaitGroup) {
 	err = server.Serve(listen)
 	cmd.CheckError(err)
 }
-
-// func (cargoMgrInfo *CargoMgrInfo) ListenTaskToMgr(wg *sync.WaitGroup) {
-// 	defer wg.Done()
-
-// 	listen, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", cargoMgrInfo.Port))
-// 	cmd.CheckError(err)
-
-// 	server := grpc.NewServer()
-// 	cargoToMgr.RegisterRpcCargoToMgrServer(server, &(cargoMgrInfo.CC))
-// 	taskToCargoMgr.RegisterRpcTaskToCargoMgrServer(server, &(cargoMgrInfo.TCM))
-
-// 	reflection.Register(server)
-
-// 	err = server.Serve(listen)
-// 	cmd.CheckError(err)
-// }
